@@ -395,6 +395,7 @@ const EventDetailPage: React.FC = () => {
   const { user, isLoading: isUserLoading } = useUser();
   const [event, setEvent] = useState<Event | null>(null);
   const [rsvps, setRsvps] = useState<RsvpUser[]>([]);
+  const [canViewAttendees, setCanViewAttendees] = useState(true);
   const [loading, setLoading] = useState(true);
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as const });
@@ -414,7 +415,8 @@ const EventDetailPage: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           setEvent(data.event);
-          setRsvps(data.rsvps.filter((r: RsvpUser) => r.status === 'going'));
+          setRsvps((data.rsvps || []).filter((r: RsvpUser) => r.status === 'going'));
+          setCanViewAttendees(data.canViewAttendees !== false);
         }
       } catch (error) {
         console.error('Error fetching event:', error);
@@ -450,6 +452,7 @@ const EventDetailPage: React.FC = () => {
             pfpUrl: user.pfpUrl || null,
             status: 'going',
           }]);
+          setCanViewAttendees(true); // Now attending; can see list if attendees_only
           showToast('RSVP confirmed!');
         }
       } else {
@@ -589,27 +592,37 @@ const EventDetailPage: React.FC = () => {
             )}
 
             <AttendeesSection>
-              <SectionTitle>Attendees ({rsvps.length})</SectionTitle>
-              {rsvps.length > 0 ? (
-                <AttendeesList>
-                  {rsvps.map((attendee) => {
-                    const name = attendee.displayName || attendee.username || 'Anonymous';
-                    return (
-                      <AttendeeChip key={attendee.id}>
-                        <AttendeeAvatar $hasImage={!!attendee.pfpUrl}>
-                          {attendee.pfpUrl ? (
-                            <img src={attendee.pfpUrl} alt={name} />
-                          ) : (
-                            <AvatarFallback>{getInitials(name)}</AvatarFallback>
-                          )}
-                        </AttendeeAvatar>
-                        <AttendeeName>{name}</AttendeeName>
-                      </AttendeeChip>
-                    );
-                  })}
-                </AttendeesList>
+              <SectionTitle>Attendees ({event.rsvpCount})</SectionTitle>
+              {canViewAttendees ? (
+                rsvps.length > 0 ? (
+                  <AttendeesList>
+                    {rsvps.map((attendee) => {
+                      const name = attendee.displayName || attendee.username || 'Anonymous';
+                      return (
+                        <AttendeeChip key={attendee.id}>
+                          <AttendeeAvatar $hasImage={!!attendee.pfpUrl}>
+                            {attendee.pfpUrl ? (
+                              <img src={attendee.pfpUrl} alt={name} />
+                            ) : (
+                              <AvatarFallback>{getInitials(name)}</AvatarFallback>
+                            )}
+                          </AttendeeAvatar>
+                          <AttendeeName>{name}</AttendeeName>
+                        </AttendeeChip>
+                      );
+                    })}
+                  </AttendeesList>
+                ) : (
+                  <EmptyAttendees>No one has RSVP&apos;d yet. Be the first!</EmptyAttendees>
+                )
               ) : (
-                <EmptyAttendees>No one has RSVP&apos;d yet. Be the first!</EmptyAttendees>
+                <EmptyAttendees>
+                  {!user
+                    ? "Sign in to see who's going"
+                    : communityConfig.features.attendeeVisibility === 'attendees_only'
+                      ? "Only attendees can see who's going"
+                      : "Only members can see who's going"}
+                </EmptyAttendees>
               )}
             </AttendeesSection>
           </EventContent>

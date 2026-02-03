@@ -57,52 +57,42 @@ const ContentArea = styled.div`
   animation: ${fadeIn} 0.4s ease-out;
 `;
 
-const CreatePostButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 1rem;
-  background: ${({ theme }) => theme.surface};
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.accent};
-  }
-`;
-
-const CreatePostAvatar = styled.div<{ $hasImage: boolean }>`
-  width: 40px;
-  height: 40px;
+const FloatingPostBubble = styled.button`
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(70px + env(safe-area-inset-bottom) + 0.75rem);
+  z-index: 50;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: ${props => props.$hasImage ? 'transparent' : props.theme.surfaceHover};
-  overflow: hidden;
+  background: ${({ theme }) => theme.accent};
+  color: white;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   }
-`;
-
-const AvatarFallback = styled.span`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textMuted};
-`;
-
-const CreatePostPlaceholder = styled.span`
-  flex: 1;
-  text-align: left;
-  color: ${({ theme }) => theme.textMuted};
-  font-size: 0.95rem;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
 `;
 
 const PostsList = styled.div`
@@ -241,8 +231,6 @@ const FeedPage: React.FC = () => {
     return <Loading text="Loading..." />;
   }
 
-  const displayName = user?.displayName || user?.username || '';
-
   return (
     <Container>
       <Head>
@@ -254,19 +242,6 @@ const FeedPage: React.FC = () => {
 
       <Main>
         <ContentArea>
-          {user && (
-            <CreatePostButton onClick={() => setCreateModalOpen(true)}>
-              <CreatePostAvatar $hasImage={!!user.pfpUrl}>
-                {user.pfpUrl ? (
-                  <img src={user.pfpUrl} alt={displayName} />
-                ) : (
-                  <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
-                )}
-              </CreatePostAvatar>
-              <CreatePostPlaceholder>What&apos;s on your mind?</CreatePostPlaceholder>
-            </CreatePostButton>
-          )}
-
           {loading ? (
             <LoadingMore>Loading posts...</LoadingMore>
           ) : posts.length > 0 ? (
@@ -300,7 +275,15 @@ const FeedPage: React.FC = () => {
         <TabBar />
       </Main>
 
-      {/* Create Post Modal */}
+      {user && (
+        <FloatingPostBubble onClick={() => setCreateModalOpen(true)} aria-label="Create post">
+          <svg viewBox="0 0 24 24">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        </FloatingPostBubble>
+      )}
+
       <CreatePostModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}

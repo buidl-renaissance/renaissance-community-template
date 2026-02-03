@@ -16,6 +16,10 @@ interface Member {
   username: string | null;
   displayName: string | null;
   pfpUrl: string | null;
+  role: string;
+  profileVisibility: string;
+  eventCount: number;
+  postCount: number;
   createdAt: Date;
 }
 
@@ -141,6 +145,21 @@ const MemberUsername = styled.div`
   margin-bottom: 0.25rem;
 `;
 
+const MemberRole = styled.span`
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.accent};
+  margin-left: 0.5rem;
+`;
+
+const MemberParticipation = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.textMuted};
+  margin-top: 0.25rem;
+`;
+
 const MemberBio = styled.div`
   font-size: 0.85rem;
   color: ${({ theme }) => theme.textSecondary};
@@ -211,6 +230,16 @@ function formatMemberSince(date: Date): string {
   return `Member since ${d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
 }
 
+function formatRole(role: string): string {
+  const labels: Record<string, string> = {
+    user: 'Member',
+    organizer: 'Organizer',
+    mentor: 'Mentor',
+    admin: 'Admin',
+  };
+  return labels[role] ?? role;
+}
+
 const MembersPage: React.FC = () => {
   const router = useRouter();
   const { user, isLoading: isUserLoading } = useUser();
@@ -221,6 +250,7 @@ const MembersPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as const });
+  const [canView, setCanView] = useState(true);
 
   const pageSize = 20;
 
@@ -249,6 +279,7 @@ const MembersPage: React.FC = () => {
       const response = await fetch(`/api/members/list?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
+        setCanView(data.canView !== false);
         if (append) {
           setMembers(prev => [...prev, ...data.members]);
         } else {
@@ -321,6 +352,47 @@ const MembersPage: React.FC = () => {
 
           {loading ? (
             <LoadingContainer>Loading members...</LoadingContainer>
+          ) : !canView ? (
+            <EmptyState>
+              <h3>Member directory</h3>
+              <p>Join the community to see the member directory.</p>
+              {user && (
+                <form
+                  method="post"
+                  action="/api/members"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    try {
+                      const res = await fetch('/api/members', { method: 'POST' });
+                      const data = await res.json();
+                      if (res.ok) {
+                        showToast(data.alreadyMember ? 'You are already a member!' : 'Welcome! You are now a member.');
+                        setCanView(true);
+                        fetchMembers(1, search);
+                      }
+                    } catch {
+                      showToast('Failed to join.', 'error');
+                    }
+                  }}
+                  style={{ marginTop: '1rem' }}
+                >
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'var(--accent)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Join community
+                  </button>
+                </form>
+              )}
+            </EmptyState>
           ) : members.length > 0 ? (
             <>
               <MembersGrid>
@@ -336,10 +408,16 @@ const MembersPage: React.FC = () => {
                         )}
                       </MemberAvatar>
                       <MemberInfo>
-                        <MemberName>{displayName}</MemberName>
+                        <MemberName>
+                          {displayName}
+                          <MemberRole>{formatRole(member.role)}</MemberRole>
+                        </MemberName>
                         {member.username && member.displayName && (
                           <MemberUsername>@{member.username}</MemberUsername>
                         )}
+                        <MemberParticipation>
+                          {member.eventCount} events attended · {member.postCount} posts
+                        </MemberParticipation>
                         {member.bio && <MemberBio>{member.bio}</MemberBio>}
                         <MemberSince>{formatMemberSince(member.createdAt)}</MemberSince>
                       </MemberInfo>

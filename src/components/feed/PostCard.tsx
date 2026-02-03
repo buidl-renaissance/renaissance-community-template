@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useUser } from '@/contexts/UserContext';
+import { communityConfig } from '@/config/community';
 
 // SVG Icons
 const HeartIcon = ({ filled }: { filled?: boolean }) => (
@@ -428,9 +429,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLikeToggle, onCommen
       </CardContent>
 
       <CardActions>
-        <ActionButton $active={liked} onClick={handleLike} disabled={!user}>
-          <HeartIcon filled={liked} /> {likeCount}
-        </ActionButton>
+        {communityConfig.features.showLikes && (
+          <ActionButton $active={liked} onClick={handleLike} disabled={!user}>
+            <HeartIcon filled={liked} /> {likeCount}
+          </ActionButton>
+        )}
         <ActionButton onClick={handleToggleComments}>
           <CommentIcon /> {commentCount}
         </ActionButton>

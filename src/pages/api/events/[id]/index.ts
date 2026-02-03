@@ -1,8 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getDb } from '@/db/drizzle';
-import { events, eventRsvps, users } from '@/db/schema';
+import { events, eventRsvps, users, members } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { getUserById, isOrganizer, isAdmin } from '@/db/user';
+import { communityConfig } from '@/config/community';
+
+// attendeeVisibility (below) gates who can see the attendee list.
+// autoEventRecap (communityConfig.features.autoEventRecap): when enabled, a system post can be created after event end — implementation deferred for v1.
 
 type EventWithCreator = {
   id: string;
@@ -38,6 +42,7 @@ type RsvpUser = {
 type GetResponseData = {
   event: EventWithCreator;
   rsvps: RsvpUser[];
+  canViewAttendees: boolean;
 };
 
 type PutResponseData = {
@@ -153,13 +158,37 @@ export default async function handler(
         .leftJoin(users, eq(eventRsvps.userId, users.id))
         .where(eq(eventRsvps.eventId, eventId));
 
-      const rsvps: RsvpUser[] = rsvpsWithUsers.map((r) => ({
+      let rsvps: RsvpUser[] = rsvpsWithUsers.map((r) => ({
         id: r.userId,
         username: r.username,
         displayName: r.displayName,
         pfpUrl: r.pfpUrl,
         status: r.status,
       }));
+
+      const visibility = communityConfig.features.attendeeVisibility ?? 'public';
+      let canViewAttendees = true;
+      if (visibility === 'members') {
+        if (!currentUser) {
+          canViewAttendees = false;
+          rsvps = [];
+        } else {
+          const memberRow = await db
+            .select({ id: members.id })
+            .from(members)
+            .where(eq(members.userId, currentUser.id))
+            .limit(1);
+          if (memberRow.length === 0) {
+            canViewAttendees = false;
+            rsvps = [];
+          }
+        }
+      } else if (visibility === 'attendees_only') {
+        if (!currentUser || userRsvpStatus !== 'going') {
+          canViewAttendees = false;
+          rsvps = [];
+        }
+      }
 
       const event: EventWithCreator = {
         id: e.id,
@@ -184,7 +213,7 @@ export default async function handler(
         userRsvpStatus,
       };
 
-      return res.status(200).json({ event, rsvps });
+      return res.status(200).json({ event, rsvps, canViewAttendees });
     } catch (error) {
       console.error('Error fetching event:', error);
       return res.status(500).json({ error: 'Failed to fetch event' });

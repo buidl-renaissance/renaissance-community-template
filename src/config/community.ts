@@ -17,6 +17,28 @@ export const communityConfig = {
     favicon: "/favicon.ico",
   },
   
+  // Home page copy (editable per community)
+  home: {
+    missionStatement: "A place to connect, share, and grow together.",
+    whoIsThisFor: "Anyone who wants to participate and contribute.",
+    whoIsThisNotFor: null as string | null, // Optional: "Not for X"
+    howToParticipate: [
+      "Attend events",
+      "Join the chat",
+      "Introduce yourself",
+      "Contribute to the feed",
+    ],
+    howToContributeLead: [
+      "Volunteer",
+      "Organize events",
+      "Mentor others",
+      "Help shape the community",
+    ],
+    memberValue: "Members get access to events, direct connection with others, and a say in how the community grows.",
+    faqUrl: null as string | null,   // Link only; not foregrounded
+    guidelinesUrl: null as string | null,
+  },
+
   // Feature Toggles
   features: {
     // Enable/disable major features
@@ -24,10 +46,22 @@ export const communityConfig = {
     chat: true,           // Community chat
     events: true,         // Events system
     socialFeed: true,     // Social feed with posts
-    
-    // Events configuration
+
+    // Engagement (spec: no metrics by default)
+    showLikes: false,     // When true, show like button and count on posts
+
+    // Visibility and safety (defaults favor opt-in / safety)
+    memberDirectoryPublic: false,  // When false, only members see the directory
+    eventsPublic: true,           // Events list visible to non-members
+    attendeeVisibility: 'public' as 'public' | 'members' | 'attendees_only', // Who can see event attendee list
+
+    // Events
     externalEventsApi: null as string | null, // URL to external events API (e.g., Meetup)
-    
+    autoEventRecap: false,        // When enabled, a system post can be created after event end (implementation deferred)
+
+    // Chat: single channel in v1; future: 'event_based' | 'topic_based'
+    chatChannels: 'single' as 'single',
+
     // Permissions
     allowPublicViewing: true,      // Allow non-members to view content
     requireMembershipToPost: false, // Require membership to create posts

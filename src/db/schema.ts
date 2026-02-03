@@ -2,7 +2,11 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // User roles
-export type UserRole = 'user' | 'organizer' | 'admin';
+export type UserRole = 'user' | 'organizer' | 'mentor' | 'admin';
+
+// Member profile visibility
+export const PROFILE_VISIBILITY = ['public', 'members_only', 'hidden'] as const;
+export type ProfileVisibility = typeof PROFILE_VISIBILITY[number];
 
 // User status enum values
 export const USER_STATUSES = ['active', 'inactive', 'banned'] as const;
@@ -38,6 +42,7 @@ export const members = sqliteTable('members', {
   id: text('id').primaryKey(),
   userId: text('userId').notNull().unique(),
   bio: text('bio'), // Optional member bio
+  profileVisibility: text('profileVisibility').$type<ProfileVisibility>().default('members_only').notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 

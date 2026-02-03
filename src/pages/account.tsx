@@ -153,11 +153,79 @@ const RoleBadge = styled.span<{ $role: string }>`
   background: ${({ $role, theme }) =>
     $role === 'admin' ? theme.danger + '20' :
     $role === 'organizer' ? theme.warning + '20' :
-    theme.accent + '20'};
+    $role === 'mentor' ? theme.accent + '20' :
+    theme.surfaceHover};
   color: ${({ $role, theme }) =>
     $role === 'admin' ? theme.danger :
     $role === 'organizer' ? theme.warning :
-    theme.accent};
+    $role === 'mentor' ? theme.accent :
+    theme.textMuted};
+`;
+
+const ProfileVisibilitySelect = styled.select`
+  font-size: 0.9rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.accent};
+  }
+`;
+
+const ToggleRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const ToggleLabel = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+const ToggleDescription = styled.span`
+  display: block;
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.textMuted};
+  margin-top: 0.25rem;
+`;
+
+const ToggleSwitch = styled.button<{ $on: boolean }>`
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  background: ${({ $on, theme }) => ($on ? theme.accent : theme.border)};
+
+  &::after {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    margin: 2px;
+    transition: transform 0.2s;
+    transform: translateX(${({ $on }) => ($on ? '20px' : '0')});
+  }
 `;
 
 const InfoList = styled.div`
@@ -478,12 +546,24 @@ const AlternativeLoginLink = styled(Link)`
 const APP_DEEP_LINK = 'renaissance://';
 const APP_AUTH_DEEP_LINK = 'renaissance://authenticate';
 
+type ProfileVisibilityValue = 'public' | 'members_only' | 'hidden';
+
 export default function AccountPage() {
   const router = useRouter();
   const { user, isLoading, signOut, refreshUser } = useUser();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [imageError, setImageError] = useState(false);
-  
+
+  // Profile visibility (member-only)
+  const [profileVisibility, setProfileVisibility] = useState<ProfileVisibilityValue | null>(null);
+  const [profileVisibilityLoading, setProfileVisibilityLoading] = useState(false);
+  const [profileVisibilitySaving, setProfileVisibilitySaving] = useState(false);
+
+  // Notification preferences (stub – UI only for v1)
+  const [eventReminders, setEventReminders] = useState(true);
+  const [newReplies, setNewReplies] = useState(true);
+  const [communityAnnouncements, setCommunityAnnouncements] = useState(true);
+
   // Login state
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
@@ -514,6 +594,46 @@ export default function AccountPage() {
       setIsCreatingSession(false);
     }
   }, []);
+
+  // Fetch member profile visibility when user is set
+  useEffect(() => {
+    if (!user) {
+      setProfileVisibility(null);
+      return;
+    }
+    let cancelled = false;
+    setProfileVisibilityLoading(true);
+    fetch('/api/members/me')
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data: { profileVisibility?: string } | null) => {
+        if (cancelled || !data?.profileVisibility) return;
+        setProfileVisibility(data.profileVisibility as ProfileVisibilityValue);
+      })
+      .finally(() => {
+        if (!cancelled) setProfileVisibilityLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const handleProfileVisibilityChange = async (value: ProfileVisibilityValue) => {
+    setProfileVisibilitySaving(true);
+    try {
+      const res = await fetch('/api/members/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileVisibility: value }),
+      });
+      const data = await res.json();
+      if (data.success) setProfileVisibility(value);
+    } finally {
+      setProfileVisibilitySaving(false);
+    }
+  };
 
   // Create session when component mounts (if not logged in)
   useEffect(() => {
@@ -781,7 +901,7 @@ export default function AccountPage() {
                   <DisplayName>{user.displayName}</DisplayName>
                 )}
                 <RoleBadge $role={user.role || 'user'}>
-                  {user.role || 'user'}
+                  {user.role === 'admin' ? 'Admin' : user.role === 'organizer' ? 'Organizer' : user.role === 'mentor' ? 'Mentor' : 'Member'}
                 </RoleBadge>
               </ProfileInfo>
             </ProfileHeader>
@@ -819,6 +939,65 @@ export default function AccountPage() {
                 </InfoRow>
               )}
             </InfoList>
+          </Card>
+        </Section>
+
+        {profileVisibility !== null && (
+          <Section $delay={0.12}>
+            <SectionTitle>Profile visibility</SectionTitle>
+            <Card>
+              <InfoRow>
+                <InfoLabel>Who can see your profile</InfoLabel>
+                <ProfileVisibilitySelect
+                  value={profileVisibility}
+                  disabled={profileVisibilityLoading || profileVisibilitySaving}
+                  onChange={(e) => handleProfileVisibilityChange(e.target.value as ProfileVisibilityValue)}
+                >
+                  <option value="public">Everyone</option>
+                  <option value="members_only">Members only</option>
+                  <option value="hidden">Hidden</option>
+                </ProfileVisibilitySelect>
+              </InfoRow>
+            </Card>
+          </Section>
+        )}
+
+        <Section $delay={0.14}>
+          <SectionTitle>Notifications</SectionTitle>
+          <Card>
+            <ToggleRow>
+              <div>
+                <ToggleLabel>Event reminders</ToggleLabel>
+                <ToggleDescription>Get reminded before events you RSVP to</ToggleDescription>
+              </div>
+              <ToggleSwitch
+                $on={eventReminders}
+                onClick={() => setEventReminders((v) => !v)}
+                aria-label="Toggle event reminders"
+              />
+            </ToggleRow>
+            <ToggleRow>
+              <div>
+                <ToggleLabel>New replies to my posts</ToggleLabel>
+                <ToggleDescription>When someone comments on your posts</ToggleDescription>
+              </div>
+              <ToggleSwitch
+                $on={newReplies}
+                onClick={() => setNewReplies((v) => !v)}
+                aria-label="Toggle new replies"
+              />
+            </ToggleRow>
+            <ToggleRow>
+              <div>
+                <ToggleLabel>Community announcements</ToggleLabel>
+                <ToggleDescription>Updates from organizers</ToggleDescription>
+              </div>
+              <ToggleSwitch
+                $on={communityAnnouncements}
+                onClick={() => setCommunityAnnouncements((v) => !v)}
+                aria-label="Toggle community announcements"
+              />
+            </ToggleRow>
           </Card>
         </Section>
 

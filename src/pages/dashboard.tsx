@@ -31,33 +31,14 @@ interface EventPreview {
   userRsvpStatus?: string | null;
 }
 
-// Mock Resources Data
-const RESOURCES = {
-  quickLinks: [
-    { id: '1', title: 'Community Guidelines', icon: '📋', href: '#guidelines', description: 'Rules and best practices' },
-    { id: '2', title: 'Getting Started', icon: '🚀', href: '#getting-started', description: 'New here? Start here!' },
-    { id: '3', title: 'Events', icon: '📅', href: '/events', description: 'Upcoming events' },
-    { id: '4', title: 'FAQs', icon: '❓', href: '#faqs', description: 'Common questions answered' },
-    { id: '5', title: 'Contact Support', icon: '💬', href: '#support', description: 'Get help from our team' },
-  ],
-  guides: [
-    { id: '1', title: 'Welcome to the Community', description: 'Learn how to make the most of your membership and connect with others.', icon: '👋', category: 'Getting Started' },
-    { id: '2', title: 'How to Create Your First Post', description: 'Share your thoughts, ideas, and updates with the community.', icon: '✏️', category: 'Getting Started' },
-    { id: '3', title: 'Attending Events', description: 'Discover how to find, RSVP, and participate in community events.', icon: '📅', category: 'Events' },
-    { id: '4', title: 'Connecting with Members', description: 'Tips for networking and building meaningful relationships.', icon: '🤝', category: 'Networking' },
-  ],
-  usefulLinks: [
-    { id: '1', title: 'Discord Server', url: 'https://discord.gg', icon: '💬' },
-    { id: '2', title: 'Twitter / X', url: 'https://twitter.com', icon: '🐦' },
-    { id: '3', title: 'Newsletter Archive', url: '#newsletter', icon: '📧' },
-    { id: '4', title: 'Resource Library', url: '#library', icon: '📚' },
-  ],
-  faqs: [
-    { id: '1', question: 'How do I update my profile?', answer: 'Go to the Account tab and you can view and manage your profile information there.' },
-    { id: '2', question: 'How do I RSVP to an event?', answer: 'Navigate to the Events tab, find the event you want to attend, and tap the RSVP button.' },
-    { id: '3', question: 'Can I invite friends to join?', answer: 'Yes! Share the community link with anyone you think would be a great fit.' },
-    { id: '4', question: 'How do I contact an admin?', answer: 'You can reach out through the community chat or use the Contact Support link above.' },
-  ],
+// How to Participate: map config strings to optional links
+const PARTICIPATE_LINKS: Record<string, string> = {
+  'Attend events': '/events',
+  'Join the chat': '/chat',
+  'Join chat': '/chat',
+  'Introduce yourself': '/members',
+  'Contribute to the feed': '/feed',
+  'Contribute': '/feed',
 };
 
 // Animations
@@ -162,197 +143,81 @@ const EmptyEvents = styled.div`
   font-size: 0.9rem;
 `;
 
-const QuickLinksGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  
-  @media (min-width: 600px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
+const IdentityBlock = styled.div`
+  margin-bottom: 1rem;
 `;
 
-const QuickLinkCard = styled(Link)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.25rem 1rem;
-  background: ${({ theme }) => theme.surface};
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 12px;
-  text-decoration: none;
-  transition: all 0.15s ease;
-  text-align: center;
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.accent};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px ${({ theme }) => theme.accent}15;
-  }
-`;
-
-const QuickLinkIcon = styled.span`
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-`;
-
-const QuickLinkTitle = styled.span`
-  font-size: 0.85rem;
-  font-weight: 600;
+const IdentityMission = styled.p`
+  font-size: 1rem;
   color: ${({ theme }) => theme.text};
-  margin-bottom: 0.25rem;
+  line-height: 1.5;
+  margin: 0 0 0.75rem 0;
 `;
 
-const QuickLinkDesc = styled.span`
-  font-size: 0.7rem;
-  color: ${({ theme }) => theme.textMuted};
-`;
-
-const GuidesList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-`;
-
-const GuideCard = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1rem;
-  background: ${({ theme }) => theme.surface};
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.accent};
-  }
-`;
-
-const GuideIcon = styled.span`
-  font-size: 1.5rem;
-  flex-shrink: 0;
-`;
-
-const GuideContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const GuideTitle = styled.h3`
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.text};
-  margin: 0 0 0.25rem 0;
-`;
-
-const GuideDescription = styled.p`
-  font-size: 0.85rem;
+const IdentityWho = styled.p`
+  font-size: 0.9rem;
   color: ${({ theme }) => theme.textMuted};
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
 `;
 
-const GuideCategory = styled.span`
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  background: ${({ theme }) => theme.accent}15;
+const BulletList = styled.ul`
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+`;
+
+const BulletItem = styled.li`
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.text};
+  line-height: 1.5;
+`;
+
+const BulletLink = styled(Link)`
   color: ${({ theme }) => theme.accent};
-  font-size: 0.7rem;
-  font-weight: 600;
-  border-radius: 4px;
-  margin-top: 0.5rem;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
-const LinksRow = styled.div`
+const MemberValueBlock = styled.p`
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.text};
+  line-height: 1.5;
+  margin: 0;
+`;
+
+const QuickLinksRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
 `;
 
-const UsefulLink = styled.a`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: ${({ theme }) => theme.surface};
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 8px;
-  text-decoration: none;
+const QuickLink = styled(Link)`
   font-size: 0.9rem;
-  color: ${({ theme }) => theme.text};
-  transition: all 0.15s ease;
-  
+  color: ${({ theme }) => theme.accent};
+  text-decoration: none;
   &:hover {
-    border-color: ${({ theme }) => theme.accent};
-    color: ${({ theme }) => theme.accent};
+    text-decoration: underline;
   }
 `;
 
-const LinkIcon = styled.span`
-  font-size: 1.1rem;
-`;
-
-const FAQList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const FAQItem = styled.div<{ $expanded: boolean }>`
-  background: ${({ theme }) => theme.surface};
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 10px;
-  overflow: hidden;
-`;
-
-const FAQQuestion = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 1rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.text};
-  
+const QuickLinkExternal = styled.a`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.accent};
+  text-decoration: none;
   &:hover {
-    background: ${({ theme }) => theme.surfaceHover};
-  }
-`;
-
-const FAQArrow = styled.span<{ $expanded: boolean }>`
-  font-size: 0.8rem;
-  color: ${({ theme }) => theme.textMuted};
-  transition: transform 0.2s ease;
-  transform: rotate(${props => props.$expanded ? '180deg' : '0deg'});
-`;
-
-const FAQAnswer = styled.div<{ $expanded: boolean }>`
-  max-height: ${props => props.$expanded ? '200px' : '0'};
-  overflow: hidden;
-  transition: max-height 0.2s ease;
-  
-  p {
-    padding: 0 1rem 1rem;
-    margin: 0;
-    font-size: 0.9rem;
-    color: ${({ theme }) => theme.textMuted};
-    line-height: 1.5;
+    text-decoration: underline;
   }
 `;
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
   const { user, isLoading: isUserLoading } = useUser();
-  const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [events, setEvents] = useState<EventPreview[]>([]);
+  const home = communityConfig.home;
 
   // Redirect to /app if not authenticated
   React.useEffect(() => {
@@ -406,13 +271,54 @@ const DashboardPage: React.FC = () => {
         <ContentArea>
           <WelcomeSection>
             <WelcomeTitle>Welcome, {displayName}!</WelcomeTitle>
-            <WelcomeSubtitle>Here are some resources to help you get the most out of {communityConfig.name}</WelcomeSubtitle>
+            <WelcomeSubtitle>Here&apos;s what {communityConfig.name} is about and how you can participate.</WelcomeSubtitle>
           </WelcomeSection>
+
+          <Section>
+            <SectionTitle>Community Identity</SectionTitle>
+            <IdentityBlock>
+              <IdentityMission>{home.missionStatement}</IdentityMission>
+              <IdentityWho>Who this is for: {home.whoIsThisFor}</IdentityWho>
+              {home.whoIsThisNotFor && (
+                <IdentityWho style={{ marginTop: '0.25rem' }}>Not for: {home.whoIsThisNotFor}</IdentityWho>
+              )}
+            </IdentityBlock>
+          </Section>
+
+          <Section>
+            <SectionTitle>How to Participate</SectionTitle>
+            <BulletList>
+              {home.howToParticipate.map((item) => {
+                const href = PARTICIPATE_LINKS[item];
+                return (
+                  <BulletItem key={item}>
+                    {href ? <BulletLink href={href}>{item}</BulletLink> : item}
+                  </BulletItem>
+                );
+              })}
+            </BulletList>
+          </Section>
+
+          <Section>
+            <SectionTitle>How to Contribute / Lead</SectionTitle>
+            <BulletList>
+              {home.howToContributeLead.map((item) => (
+                <BulletItem key={item}>{item}</BulletItem>
+              ))}
+            </BulletList>
+          </Section>
+
+          <Section>
+            <SectionTitle>Member Value</SectionTitle>
+            <MemberValueBlock>{home.memberValue}</MemberValueBlock>
+          </Section>
 
           {communityConfig.features.events && (
             <Section>
               <SectionHeader>
-                <SectionTitle>Upcoming Events</SectionTitle>
+                <SectionTitle>
+                  {events.length > 0 ? 'Next event' : 'Upcoming Events'}
+                </SectionTitle>
                 <SeeAllLink href="/events">See all →</SeeAllLink>
               </SectionHeader>
               {events.length > 0 ? (
@@ -428,61 +334,16 @@ const DashboardPage: React.FC = () => {
           )}
 
           <Section>
-            <SectionTitle>Quick Links</SectionTitle>
-            <QuickLinksGrid>
-              {RESOURCES.quickLinks.map((link) => (
-                <QuickLinkCard key={link.id} href={link.href}>
-                  <QuickLinkIcon>{link.icon}</QuickLinkIcon>
-                  <QuickLinkTitle>{link.title}</QuickLinkTitle>
-                  <QuickLinkDesc>{link.description}</QuickLinkDesc>
-                </QuickLinkCard>
-              ))}
-            </QuickLinksGrid>
-          </Section>
-
-          <Section>
-            <SectionTitle>📖 Guides</SectionTitle>
-            <GuidesList>
-              {RESOURCES.guides.map((guide) => (
-                <GuideCard key={guide.id}>
-                  <GuideIcon>{guide.icon}</GuideIcon>
-                  <GuideContent>
-                    <GuideTitle>{guide.title}</GuideTitle>
-                    <GuideDescription>{guide.description}</GuideDescription>
-                    <GuideCategory>{guide.category}</GuideCategory>
-                  </GuideContent>
-                </GuideCard>
-              ))}
-            </GuidesList>
-          </Section>
-
-          <Section>
-            <SectionTitle>🔗 Useful Links</SectionTitle>
-            <LinksRow>
-              {RESOURCES.usefulLinks.map((link) => (
-                <UsefulLink key={link.id} href={link.url} target="_blank" rel="noopener noreferrer">
-                  <LinkIcon>{link.icon}</LinkIcon>
-                  {link.title}
-                </UsefulLink>
-              ))}
-            </LinksRow>
-          </Section>
-
-          <Section>
-            <SectionTitle>❓ Frequently Asked Questions</SectionTitle>
-            <FAQList>
-              {RESOURCES.faqs.map((faq) => (
-                <FAQItem key={faq.id} $expanded={expandedFaq === faq.id}>
-                  <FAQQuestion onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}>
-                    {faq.question}
-                    <FAQArrow $expanded={expandedFaq === faq.id}>▼</FAQArrow>
-                  </FAQQuestion>
-                  <FAQAnswer $expanded={expandedFaq === faq.id}>
-                    <p>{faq.answer}</p>
-                  </FAQAnswer>
-                </FAQItem>
-              ))}
-            </FAQList>
+            <SectionTitle>Quick links</SectionTitle>
+            <QuickLinksRow>
+              <QuickLink href="/events">Events</QuickLink>
+              {home.guidelinesUrl && (
+                <QuickLinkExternal href={home.guidelinesUrl} target="_blank" rel="noopener noreferrer">Guidelines</QuickLinkExternal>
+              )}
+              {home.faqUrl && (
+                <QuickLinkExternal href={home.faqUrl} target="_blank" rel="noopener noreferrer">FAQs</QuickLinkExternal>
+              )}
+            </QuickLinksRow>
           </Section>
         </ContentArea>
       </Main>
