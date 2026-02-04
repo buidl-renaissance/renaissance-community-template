@@ -161,7 +161,7 @@ const FeedPage: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as const });
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ visible: true, message, type });

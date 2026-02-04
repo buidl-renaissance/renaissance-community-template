@@ -3,6 +3,20 @@ import { createGlobalStyle } from 'styled-components';
 export const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
+  /* CSS Variables for tenant theming - set by TenantProvider */
+  :root {
+    --color-primary: #7B5CFF;
+    --color-primary-hover: #8F73FF;
+    --color-accent: #7B5CFF;
+    --color-background: #0a0a0a;
+    --color-surface: #1a1a1a;
+    --color-text: #ffffff;
+    --color-text-muted: #888888;
+    --color-border: #333333;
+    --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
   * {
     box-sizing: border-box;
     margin: 0;
@@ -11,9 +25,9 @@ export const GlobalStyle = createGlobalStyle`
 
   html,
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: ${props => props.theme.background};
-    color: ${props => props.theme.text};
+    font-family: var(--font-body);
+    background-color: var(--color-background, ${props => props.theme.background});
+    color: var(--color-text, ${props => props.theme.text});
     transition: background-color 0.2s ease, color 0.2s ease;
     line-height: 1.5;
     font-size: 15px;

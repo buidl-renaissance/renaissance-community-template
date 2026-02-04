@@ -298,7 +298,7 @@ const MembersPage: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as const });
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
   const [canView, setCanView] = useState(true);
   const [viewerIsMember, setViewerIsMember] = useState(false);
   const [joining, setJoining] = useState(false);
