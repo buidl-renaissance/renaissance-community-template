@@ -219,6 +219,55 @@ const LoadMoreButton = styled.button`
   }
 `;
 
+const JoinBanner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: ${({ theme }) => theme.accent}12;
+  border: 1px solid ${({ theme }) => theme.accent}30;
+  border-radius: 12px;
+`;
+
+const JoinBannerText = styled.div`
+  flex: 1;
+  min-width: 0;
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: ${({ theme }) => theme.text};
+  }
+  p + p {
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    color: ${({ theme }) => theme.textMuted};
+  }
+`;
+
+const JoinBannerButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background: ${({ theme }) => theme.accent};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.accentHover};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
 // Helper functions
 function getInitials(name: string | null): string {
   if (!name) return '?';
@@ -251,6 +300,8 @@ const MembersPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as const });
   const [canView, setCanView] = useState(true);
+  const [viewerIsMember, setViewerIsMember] = useState(false);
+  const [joining, setJoining] = useState(false);
 
   const pageSize = 20;
 
@@ -276,10 +327,11 @@ const MembersPage: React.FC = () => {
         params.set('search', searchQuery.trim());
       }
 
-      const response = await fetch(`/api/members/list?${params.toString()}`);
+      const response = await fetch(`/api/members/list?${params.toString()}`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         setCanView(data.canView !== false);
+        setViewerIsMember(data.viewerIsMember === true);
         if (append) {
           setMembers(prev => [...prev, ...data.members]);
         } else {
@@ -341,6 +393,38 @@ const MembersPage: React.FC = () => {
 
       <Main>
         <ContentArea>
+          {user && !viewerIsMember && (
+            <JoinBanner>
+              <JoinBannerText>
+                <p>You&apos;re not a member yet</p>
+                <p>Join the community to get the full experience and appear in the directory.</p>
+              </JoinBannerText>
+              <JoinBannerButton
+                type="button"
+                disabled={joining}
+                onClick={async () => {
+                  setJoining(true);
+                  try {
+                    const res = await fetch('/api/members', { method: 'POST', credentials: 'include' });
+                    const data = await res.json();
+                    if (res.ok) {
+                      showToast(data.alreadyMember ? 'You are already a member!' : 'Welcome! You are now a member.');
+                      setViewerIsMember(true);
+                      fetchMembers(1, search);
+                    } else {
+                      showToast(data.error || 'Failed to join.', 'error');
+                    }
+                  } catch {
+                    showToast('Failed to join.', 'error');
+                  } finally {
+                    setJoining(false);
+                  }
+                }}
+              >
+                {joining ? 'Joining…' : 'Join community'}
+              </JoinBannerButton>
+            </JoinBanner>
+          )}
           <SearchBar>
             <SearchInput
               type="text"

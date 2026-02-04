@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getDb } from '@/db/drizzle';
 import { events, eventRsvps, users, members } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { getUserById, isOrganizer, isAdmin } from '@/db/user';
 import { communityConfig } from '@/config/community';
 
@@ -137,8 +137,7 @@ export default async function handler(
         const userRsvp = await db
           .select({ status: eventRsvps.status })
           .from(eventRsvps)
-          .where(eq(eventRsvps.eventId, eventId))
-          .where(eq(eventRsvps.userId, currentUser.id))
+          .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, currentUser.id)))
           .limit(1);
         
         userRsvpStatus = userRsvp[0]?.status || null;

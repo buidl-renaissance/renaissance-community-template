@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getDb } from '@/db/drizzle';
-import { posts, postLikes, postComments, users } from '@/db/schema';
+import { posts, postLikes, postComments, users, POST_TYPES, type PostType } from '@/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserById } from '@/db/user';
@@ -9,6 +9,8 @@ type PostWithUser = {
   id: string;
   content: string;
   imageUrl: string | null;
+  type: string;
+  eventId: string | null;
   createdAt: Date;
   updatedAt: Date;
   user: {
@@ -70,6 +72,8 @@ export default async function handler(
           id: posts.id,
           content: posts.content,
           imageUrl: posts.imageUrl,
+          type: posts.type,
+          eventId: posts.eventId,
           createdAt: posts.createdAt,
           updatedAt: posts.updatedAt,
           userId: posts.userId,
@@ -123,6 +127,8 @@ export default async function handler(
         id: p.id,
         content: p.content,
         imageUrl: p.imageUrl,
+        type: p.type ?? 'post',
+        eventId: p.eventId ?? null,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
         user: {
@@ -151,7 +157,8 @@ export default async function handler(
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const { content, imageUrl } = req.body;
+      const { content, imageUrl, type } = req.body;
+      const postType: PostType = (type && typeof type === 'string' && (POST_TYPES as readonly string[]).includes(type)) ? type as PostType : 'post';
 
       if (!content || typeof content !== 'string' || content.trim().length === 0) {
         return res.status(400).json({ error: 'Post content is required' });
@@ -166,6 +173,8 @@ export default async function handler(
         userId: user.id,
         content: content.trim(),
         imageUrl: imageUrl || null,
+        type: postType,
+        eventId: null,
       };
 
       await db.insert(posts).values(newPost);
@@ -174,6 +183,8 @@ export default async function handler(
         id: newPost.id,
         content: newPost.content,
         imageUrl: newPost.imageUrl,
+        type: newPost.type,
+        eventId: newPost.eventId,
         createdAt: new Date(),
         updatedAt: new Date(),
         user: {

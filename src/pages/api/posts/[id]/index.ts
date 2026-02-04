@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getDb } from '@/db/drizzle';
 import { posts, postLikes, postComments, users } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { getUserById, isAdmin } from '@/db/user';
 
 type PostWithUser = {
@@ -116,8 +116,7 @@ export default async function handler(
         const userLike = await db
           .select()
           .from(postLikes)
-          .where(eq(postLikes.postId, postId))
-          .where(eq(postLikes.userId, currentUser.id))
+          .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, currentUser.id)))
           .limit(1);
         
         isLiked = userLike.length > 0;

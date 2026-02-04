@@ -21,6 +21,8 @@ interface Post {
   id: string;
   content: string;
   imageUrl: string | null;
+  type?: string;
+  eventId?: string | null;
   createdAt: Date;
   user: PostUser;
   likeCount: number;

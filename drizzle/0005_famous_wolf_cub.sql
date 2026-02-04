@@ -1,4 +1,4 @@
-CREATE TABLE `broadcasts` (
+CREATE TABLE IF NOT EXISTS `broadcasts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`senderId` text NOT NULL,
 	`subject` text NOT NULL,
@@ -11,5 +11,3 @@ CREATE TABLE `broadcasts` (
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`updatedAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
---> statement-breakpoint
-ALTER TABLE `members` ADD `profileVisibility` text DEFAULT 'members_only' NOT NULL;

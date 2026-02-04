@@ -1,16 +1,16 @@
 -- Members table - community membership
-CREATE TABLE `members` (
+CREATE TABLE IF NOT EXISTS `members` (
 	`id` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
 	`bio` text,
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `members_userId_unique` ON `members` (`userId`);
+CREATE UNIQUE INDEX IF NOT EXISTS `members_userId_unique` ON `members` (`userId`);
 --> statement-breakpoint
 
 -- Messages table - community chat
-CREATE TABLE `messages` (
+CREATE TABLE IF NOT EXISTS `messages` (
 	`id` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
 	`content` text NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE `messages` (
 --> statement-breakpoint
 
 -- Events table - community events
-CREATE TABLE `events` (
+CREATE TABLE IF NOT EXISTS `events` (
 	`id` text PRIMARY KEY NOT NULL,
 	`creatorId` text NOT NULL,
 	`title` text NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE `events` (
 --> statement-breakpoint
 
 -- Event RSVPs table
-CREATE TABLE `event_rsvps` (
+CREATE TABLE IF NOT EXISTS `event_rsvps` (
 	`id` text PRIMARY KEY NOT NULL,
 	`eventId` text NOT NULL,
 	`userId` text NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE `event_rsvps` (
 --> statement-breakpoint
 
 -- Posts table - social feed
-CREATE TABLE `posts` (
+CREATE TABLE IF NOT EXISTS `posts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
 	`content` text NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE `posts` (
 --> statement-breakpoint
 
 -- Post Likes table
-CREATE TABLE `post_likes` (
+CREATE TABLE IF NOT EXISTS `post_likes` (
 	`id` text PRIMARY KEY NOT NULL,
 	`postId` text NOT NULL,
 	`userId` text NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE `post_likes` (
 --> statement-breakpoint
 
 -- Post Comments table
-CREATE TABLE `post_comments` (
+CREATE TABLE IF NOT EXISTS `post_comments` (
 	`id` text PRIMARY KEY NOT NULL,
 	`postId` text NOT NULL,
 	`userId` text NOT NULL,

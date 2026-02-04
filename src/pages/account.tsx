@@ -558,6 +558,7 @@ export default function AccountPage() {
   const [profileVisibility, setProfileVisibility] = useState<ProfileVisibilityValue | null>(null);
   const [profileVisibilityLoading, setProfileVisibilityLoading] = useState(false);
   const [profileVisibilitySaving, setProfileVisibilitySaving] = useState(false);
+  const [joiningCommunity, setJoiningCommunity] = useState(false);
 
   // Notification preferences (stub – UI only for v1)
   const [eventReminders, setEventReminders] = useState(true);
@@ -941,6 +942,44 @@ export default function AccountPage() {
             </InfoList>
           </Card>
         </Section>
+
+        {!profileVisibilityLoading && profileVisibility === null && user && (
+          <Section $delay={0.11}>
+            <SectionTitle>Community</SectionTitle>
+            <Card>
+              <InfoRow>
+                <InfoLabel>Membership</InfoLabel>
+                <InfoValueMuted>You&apos;re not a member yet</InfoValueMuted>
+              </InfoRow>
+              <InfoRow>
+                <InfoLabel />
+                <ActionButton
+                  $variant="primary"
+                  disabled={joiningCommunity}
+                  onClick={async () => {
+                    setJoiningCommunity(true);
+                    try {
+                      const res = await fetch('/api/members', { method: 'POST', credentials: 'include' });
+                      const data = await res.json();
+                      if (res.ok) {
+                        setProfileVisibility('members_only');
+                        const meRes = await fetch('/api/members/me', { credentials: 'include' });
+                        if (meRes.ok) {
+                          const meData = await meRes.json();
+                          setProfileVisibility((meData.profileVisibility as ProfileVisibilityValue) ?? 'members_only');
+                        }
+                      }
+                    } finally {
+                      setJoiningCommunity(false);
+                    }
+                  }}
+                >
+                  {joiningCommunity ? 'Joining…' : 'Join community'}
+                </ActionButton>
+              </InfoRow>
+            </Card>
+          </Section>
+        )}
 
         {profileVisibility !== null && (
           <Section $delay={0.12}>

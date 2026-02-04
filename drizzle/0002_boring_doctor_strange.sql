@@ -1,4 +1,4 @@
-CREATE TABLE `event_rsvps` (
+CREATE TABLE IF NOT EXISTS `event_rsvps` (
 	`id` text PRIMARY KEY NOT NULL,
 	`eventId` text NOT NULL,
 	`userId` text NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE `event_rsvps` (
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `events` (
+CREATE TABLE IF NOT EXISTS `events` (
 	`id` text PRIMARY KEY NOT NULL,
 	`creatorId` text NOT NULL,
 	`title` text NOT NULL,
@@ -22,22 +22,22 @@ CREATE TABLE `events` (
 	`updatedAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `members` (
+CREATE TABLE IF NOT EXISTS `members` (
 	`id` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
 	`bio` text,
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `members_userId_unique` ON `members` (`userId`);--> statement-breakpoint
-CREATE TABLE `messages` (
+CREATE UNIQUE INDEX IF NOT EXISTS `members_userId_unique` ON `members` (`userId`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `messages` (
 	`id` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
 	`content` text NOT NULL,
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `post_comments` (
+CREATE TABLE IF NOT EXISTS `post_comments` (
 	`id` text PRIMARY KEY NOT NULL,
 	`postId` text NOT NULL,
 	`userId` text NOT NULL,
@@ -45,14 +45,14 @@ CREATE TABLE `post_comments` (
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `post_likes` (
+CREATE TABLE IF NOT EXISTS `post_likes` (
 	`id` text PRIMARY KEY NOT NULL,
 	`postId` text NOT NULL,
 	`userId` text NOT NULL,
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `posts` (
+CREATE TABLE IF NOT EXISTS `posts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
 	`content` text NOT NULL,

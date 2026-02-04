@@ -51,7 +51,7 @@ export const communityConfig = {
     showLikes: false,     // When true, show like button and count on posts
 
     // Visibility and safety (defaults favor opt-in / safety)
-    memberDirectoryPublic: false,  // When false, only members see the directory
+    memberDirectoryPublic: true,   // When false, only members see the directory; true = everyone can see (non-members see only public profiles)
     eventsPublic: true,           // Events list visible to non-members
     attendeeVisibility: 'public' as 'public' | 'members' | 'attendees_only', // Who can see event attendee list
 

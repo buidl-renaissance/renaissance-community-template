@@ -80,12 +80,18 @@ export const eventRsvps = sqliteTable('event_rsvps', {
   createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
+// Feed post types (event announcement, intro, rsvp, question, resource, organizer update, or generic post)
+export const POST_TYPES = ['post', 'event_announcement', 'intro', 'rsvp', 'question', 'resource', 'organizer_update'] as const;
+export type PostType = (typeof POST_TYPES)[number];
+
 // Posts table - social feed posts
 export const posts = sqliteTable('posts', {
   id: text('id').primaryKey(),
   userId: text('userId').notNull(),
   content: text('content').notNull(),
   imageUrl: text('imageUrl'), // Optional image attachment
+  type: text('type').$type<PostType>().default('post').notNull(),
+  eventId: text('eventId'), // Optional link for event_announcement / rsvp
   createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });

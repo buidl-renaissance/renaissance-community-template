@@ -25,6 +25,7 @@ type GetResponseData = {
   page: number;
   pageSize: number;
   canView: boolean;
+  viewerIsMember: boolean;
 };
 
 type ErrorResponse = {
@@ -65,9 +66,14 @@ export default async function handler(
           page: 1,
           pageSize: 20,
           canView: false,
+          viewerIsMember: false,
         });
       }
     }
+
+    const isViewerMember = currentUser
+      ? (await db.select().from(members).where(eq(members.userId, currentUser.id))).length > 0
+      : false;
 
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const pageSize = Math.min(50, Math.max(1, parseInt(req.query.pageSize as string) || 20));
@@ -107,10 +113,6 @@ export default async function handler(
     }
 
     // Filter by profile visibility: hide 'hidden'; for 'members_only' require viewer to be a member
-    const isViewerMember = currentUser
-      ? (await db.select().from(members).where(eq(members.userId, currentUser.id))).length > 0
-      : false;
-
     const filtered = membersList.filter((m) => {
       if (m.profileVisibility === 'hidden') return false;
       if (m.profileVisibility === 'members_only' && !isViewerMember) return false;
@@ -165,6 +167,7 @@ export default async function handler(
       page,
       pageSize,
       canView: true,
+      viewerIsMember: isViewerMember,
     });
   } catch (error) {
     console.error('Error fetching members list:', error);
