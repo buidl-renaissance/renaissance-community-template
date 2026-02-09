@@ -696,17 +696,12 @@ export default function AccountPage() {
     return () => clearInterval(interval);
   }, [sessionExpiresAt, sessionToken]);
 
-  // JSON format required by mobile app (type: renaissance_app_auth → POST to callbackUrl)
+  // URL format so device camera opens app; app POSTs to callbackUrl for auth (same as People)
   const getQRCodeData = () => {
     if (!sessionToken) return '';
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    return JSON.stringify({
-      type: 'renaissance_app_auth',
-      token: sessionToken,
-      callbackUrl: `${baseUrl}/api/auth/qr-authenticate`,
-      appName: communityConfig.name,
-      expiresAt: sessionExpiresAt ?? undefined,
-    });
+    const callbackUrl = `${baseUrl}/api/auth/qr-authenticate`;
+    return `renaissance://authenticate?token=${encodeURIComponent(sessionToken)}&callbackUrl=${encodeURIComponent(callbackUrl)}&appName=${encodeURIComponent(communityConfig.name)}`;
   };
 
   // Format time remaining
@@ -719,7 +714,9 @@ export default function AccountPage() {
   // Handle opening the mobile app
   const handleOpenApp = () => {
     if (sessionToken) {
-      window.location.href = `${APP_AUTH_DEEP_LINK}?token=${sessionToken}&callback=${encodeURIComponent(window.location.origin)}`;
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const callbackUrl = `${baseUrl}/api/auth/qr-authenticate`;
+      window.location.href = `${APP_AUTH_DEEP_LINK}?token=${encodeURIComponent(sessionToken)}&callbackUrl=${encodeURIComponent(callbackUrl)}&appName=${encodeURIComponent(communityConfig.name)}`;
     } else {
       window.location.href = APP_DEEP_LINK;
     }
