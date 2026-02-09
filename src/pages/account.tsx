@@ -696,11 +696,17 @@ export default function AccountPage() {
     return () => clearInterval(interval);
   }, [sessionExpiresAt, sessionToken]);
 
-  // Generate QR code URL
-  const getQRCodeUrl = () => {
+  // JSON format required by mobile app (type: renaissance_app_auth → POST to callbackUrl)
+  const getQRCodeData = () => {
     if (!sessionToken) return '';
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    return `${baseUrl}/api/auth/qr-authenticate?token=${sessionToken}`;
+    return JSON.stringify({
+      type: 'renaissance_app_auth',
+      token: sessionToken,
+      callbackUrl: `${baseUrl}/api/auth/qr-authenticate`,
+      appName: communityConfig.name,
+      expiresAt: sessionExpiresAt ?? undefined,
+    });
   };
 
   // Format time remaining
@@ -791,7 +797,7 @@ export default function AccountPage() {
                   <>
                     <QRCodeContainer>
                       <QRCodeSVG
-                        value={getQRCodeUrl()}
+                        value={getQRCodeData()}
                         size={200}
                         level="M"
                         includeMargin={false}
@@ -839,7 +845,7 @@ export default function AccountPage() {
                     </StatusText>
                     <QRCodeContainer>
                       <QRCodeSVG
-                        value={getQRCodeUrl()}
+                        value={getQRCodeData()}
                         size={160}
                         level="M"
                         includeMargin={false}
