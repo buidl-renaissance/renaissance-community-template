@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Link from 'next/link';
 import styled, { keyframes } from 'styled-components';
+import { QRCodeSVG } from 'qrcode.react';
+import { useUser } from '@/contexts/UserContext';
+import { communityConfig } from '@/config/community';
 
 const pulseGlow = keyframes`
   0%, 100% {
@@ -10,6 +14,16 @@ const pulseGlow = keyframes`
   50% {
     box-shadow: 0 0 40px rgba(123, 92, 255, 0.5);
   }
+`;
+
+const rotate = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const pulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 `;
 
 const Container = styled.div`
@@ -191,6 +205,161 @@ const PhoneDisplay = styled.div`
   margin-bottom: 0.5rem;
 `;
 
+const QRCodeContainer = styled.div`
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  display: inline-block;
+  margin-bottom: 1rem;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 24px;
+  height: 24px;
+  border: 2px solid ${({ theme }) => theme.border};
+  border-top-color: ${({ theme }) => theme.accent};
+  border-radius: 50%;
+  animation: ${rotate} 0.8s linear infinite;
+  margin: 0 auto 1rem;
+`;
+
+const StatusText = styled.p<{ $type?: 'success' | 'error' }>`
+  font-size: 0.9rem;
+  color: ${({ theme, $type }) => ($type === 'error' ? theme.danger : theme.textMuted)};
+  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+`;
+
+const PulsingDot = styled.span`
+  width: 8px;
+  height: 8px;
+  background: ${({ theme }) => theme.accent};
+  border-radius: 50%;
+  animation: ${pulse} 1.5s ease-in-out infinite;
+`;
+
+const TimerText = styled.span`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.textMuted};
+`;
+
+const RefreshButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${({ theme }) => theme.accent};
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  &:hover {
+    background: ${({ theme }) => theme.accentMuted};
+  }
+`;
+
+const DesktopOnlySection = styled.div`
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
+const MobileSection = styled.div`
+  display: none;
+  @media (max-width: 767px) {
+    display: block;
+  }
+`;
+
+const OrDivider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.85rem;
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: ${({ theme }) => theme.border};
+  }
+`;
+
+const MobileAppButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.accent};
+  background: ${({ theme }) => theme.accent};
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+const SecondaryButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: transparent;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    border-color: ${({ theme }) => theme.accent};
+    color: ${({ theme }) => theme.accent};
+  }
+`;
+
+const LinksContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid ${({ theme }) => theme.border};
+`;
+
+const StyledLink = styled(Link)`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.accent};
+  text-decoration: none;
+  opacity: 0.8;
+  &:hover {
+    opacity: 1;
+  }
+`;
+
+const GuestLink = styled(Link)`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.textMuted};
+  text-decoration: none;
+  &:hover {
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
 // Format phone number as user types: (XXX) XXX-XXXX or +1 (XXX) XXX-XXXX
 const formatPhoneNumber = (value: string): string => {
   // Strip all non-digit characters except leading +
@@ -229,19 +398,29 @@ const formatPhoneNumber = (value: string): string => {
   return formatted;
 };
 
-type LoginStep = 'phone' | 'pin' | 'setPin' | 'locked';
+type LoginStep = 'method' | 'phone' | 'pin' | 'setPin' | 'locked';
+
+const APP_AUTH_DEEP_LINK = 'renaissance://authenticate';
+const APP_DEEP_LINK = 'renaissance://';
 
 export default function LoginPage() {
   const router = useRouter();
   const { redirect } = router.query;
+  const { user, isLoading: userLoading, refreshUser } = useUser();
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<LoginStep>('phone');
+  const [step, setStep] = useState<LoginStep>('method');
   const [normalizedPhone, setNormalizedPhone] = useState('');
   const [userName, setUserName] = useState('');
+
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(0);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneNumber(e.target.value);
@@ -262,6 +441,104 @@ export default function LoginPage() {
 
   // Get the redirect URL or default to dashboard
   const redirectUrl = typeof redirect === 'string' ? redirect : '/';
+
+  useEffect(() => {
+    if (!userLoading && user) {
+      window.location.href = redirectUrl;
+    }
+  }, [user, userLoading, redirectUrl]);
+
+  const createSession = useCallback(async () => {
+    setIsCreatingSession(true);
+    setLoginError(null);
+    try {
+      const res = await fetch('/api/auth/session', { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.token) {
+        setSessionToken(data.token);
+        setSessionExpiresAt(data.expiresAt);
+      } else {
+        setLoginError('Failed to create login session');
+      }
+    } catch {
+      setLoginError('Failed to create login session');
+    } finally {
+      setIsCreatingSession(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step === 'method' && !sessionToken && !isCreatingSession && !userLoading && !user) {
+      createSession();
+    }
+  }, [step, sessionToken, isCreatingSession, createSession, userLoading, user]);
+
+  useEffect(() => {
+    if (!sessionToken || user || step !== 'method') return;
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/auth/session?token=${sessionToken}`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.authenticated) {
+          await refreshUser();
+          setSessionToken(null);
+          setSessionExpiresAt(null);
+          window.location.href = redirectUrl;
+        } else if (data.expired) {
+          setSessionToken(null);
+          setSessionExpiresAt(null);
+          createSession();
+        }
+      } catch {
+        // ignore
+      }
+    }, 2000);
+    return () => clearInterval(pollInterval);
+  }, [sessionToken, user, step, refreshUser, redirectUrl, createSession]);
+
+  useEffect(() => {
+    if (!sessionExpiresAt) {
+      setTimeRemaining(0);
+      return;
+    }
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.floor((sessionExpiresAt - Date.now()) / 1000));
+      setTimeRemaining(remaining);
+      if (remaining === 0 && sessionToken) {
+        setSessionToken(null);
+        setSessionExpiresAt(null);
+      }
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [sessionExpiresAt, sessionToken]);
+
+  const getQRCodeData = () => {
+    if (!sessionToken) return '';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return JSON.stringify({
+      type: 'renaissance_app_auth',
+      token: sessionToken,
+      callbackUrl: `${baseUrl}/api/auth/qr-authenticate`,
+      appName: communityConfig.name,
+      expiresAt: sessionExpiresAt ?? undefined,
+    });
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleOpenApp = () => {
+    if (sessionToken) {
+      window.location.href = `${APP_AUTH_DEEP_LINK}?token=${sessionToken}&callback=${encodeURIComponent(window.location.origin)}`;
+    } else {
+      window.location.href = APP_DEEP_LINK;
+    }
+  };
 
   // Get pending user data from localStorage (set by Renaissance app auth)
   const getPendingUserData = () => {
@@ -452,6 +729,85 @@ export default function LoginPage() {
     setError('');
   };
 
+  const handleBackToMethod = () => {
+    setStep('method');
+    setPin('');
+    setConfirmPin('');
+    setError('');
+    if (!sessionToken) createSession();
+  };
+
+  if (userLoading) return null;
+
+  // Method step (default): QR + Use Phone Number
+  if (step === 'method') {
+    return (
+      <>
+        <Head>
+          <title>Sign In | {communityConfig.name}</title>
+          <meta name="description" content={`Sign in to ${communityConfig.name}`} />
+        </Head>
+        <Container>
+          <FormCard>
+            <Title>Sign In</Title>
+            <DesktopOnlySection>
+              <Subtitle>Scan this QR code with the Renaissance app to sign in</Subtitle>
+              {isCreatingSession ? (
+                <>
+                  <LoadingSpinner />
+                  <StatusText>Creating session...</StatusText>
+                </>
+              ) : loginError ? (
+                <>
+                  <StatusText $type="error">{loginError}</StatusText>
+                  <RefreshButton onClick={createSession} type="button">Try Again</RefreshButton>
+                </>
+              ) : sessionToken ? (
+                <div style={{ textAlign: 'center' }}>
+                  <QRCodeContainer>
+                    <QRCodeSVG value={getQRCodeData()} size={200} level="M" includeMargin={false} />
+                  </QRCodeContainer>
+                  <StatusText>
+                    <PulsingDot />
+                    Waiting for authentication...
+                  </StatusText>
+                  {timeRemaining > 0 && (
+                    <TimerText>Expires in {formatTime(timeRemaining)}</TimerText>
+                  )}
+                  {timeRemaining === 0 && (
+                    <RefreshButton onClick={createSession} type="button">Refresh QR Code</RefreshButton>
+                  )}
+                </div>
+              ) : null}
+            </DesktopOnlySection>
+            <MobileSection>
+              <Subtitle>Open the Renaissance app to sign in to your account</Subtitle>
+              <MobileAppButton onClick={handleOpenApp} type="button">Open Renaissance App</MobileAppButton>
+              <OrDivider>or</OrDivider>
+              {sessionToken ? (
+                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                  <StatusText style={{ marginBottom: '0.5rem' }}>Show this QR code to another device</StatusText>
+                  <QRCodeContainer>
+                    <QRCodeSVG value={getQRCodeData()} size={160} level="M" includeMargin={false} />
+                  </QRCodeContainer>
+                  <StatusText><PulsingDot /> Waiting...</StatusText>
+                </div>
+              ) : null}
+            </MobileSection>
+            <OrDivider>or sign in with phone</OrDivider>
+            <SecondaryButton type="button" onClick={() => setStep('phone')}>Use Phone Number</SecondaryButton>
+            <LinksContainer>
+              <StyledLink href={`/register?redirect=${encodeURIComponent(redirectUrl)}`}>
+                Create a new account
+              </StyledLink>
+              <GuestLink href="/dashboard">Continue as guest</GuestLink>
+            </LinksContainer>
+          </FormCard>
+        </Container>
+      </>
+    );
+  }
+
   // Locked account view
   if (step === 'locked') {
     return (
@@ -468,8 +824,8 @@ export default function LoginPage() {
               <LockedText>
                 Your account has been locked for security reasons. Please contact an administrator to unlock your account.
               </LockedText>
-              <BackButton onClick={handleBack}>
-                Try Different Number
+              <BackButton onClick={handleBackToMethod}>
+                Try Different Method
               </BackButton>
             </LockedMessage>
           </FormCard>
@@ -597,21 +953,19 @@ export default function LoginPage() {
     );
   }
 
-  // Phone entry step (default)
+  // Phone entry step
   return (
     <>
       <Head>
-        <title>Sign In</title>
-        <meta name="description" content="Sign in to your account" />
+        <title>Sign In | {communityConfig.name}</title>
+        <meta name="description" content={`Sign in to ${communityConfig.name}`} />
       </Head>
       <Container>
         <FormCard>
           <Title>Sign In</Title>
           <Subtitle>Enter your phone number to continue</Subtitle>
-          
           <Form onSubmit={handlePhoneSubmit}>
             {error && <ErrorMessage>{error}</ErrorMessage>}
-            
             <FormGroup>
               <Label>Phone Number</Label>
               <Input
@@ -624,10 +978,12 @@ export default function LoginPage() {
                 autoFocus
               />
             </FormGroup>
-            
             <SubmitButton type="submit" disabled={loading} $loading={loading}>
               {loading ? 'Checking...' : 'Continue'}
             </SubmitButton>
+            <SecondaryButton type="button" onClick={handleBackToMethod} style={{ marginTop: '1rem' }}>
+              Back to sign-in options
+            </SecondaryButton>
           </Form>
         </FormCard>
       </Container>
